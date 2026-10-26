@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>种一座共建花园 · 深圳包容性设计线上展</title>
+<style>
+  :root{
+    --cream:#fdf8ef;
+    --cream-2:#f6efe1;
+    --moss:#9dbf8b;
+    --moss-deep:#5f7d52;
+    --clay:#d99b6c;
+    --clay-deep:#b8764a;
+    --rose:#f0b9b0;
+    --ink:#4a4438;
+    --ink-soft:#7b7263;
+    --line:rgba(120,110,90,0.18);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  body{
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",ui-rounded,system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:var(--cream);
+    user-select:none;
+  }
+  .app{position:fixed;inset:0;display:flex;flex-direction:column;}
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{
+    flex:none;display:flex;align-items:center;gap:12px;
+    padding:10px 16px;background:rgba(253,248,239,0.92);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(6px);z-index:20;
+  }
+  .back{
+    flex:none;font-size:12.5px;letter-spacing:1px;color:var(--ink-soft);
+    text-decoration:none;border:1px solid var(--line);border-radius:999px;
+    padding:6px 12px;background:#fff;white-space:nowrap;
+  }
+  .back:hover{color:var(--clay-deep);border-color:rgba(184,118,74,0.5);}
+  .stagetext{flex:1;min-width:0;text-align:center;font-size:12.5px;letter-spacing:2px;color:var(--ink-soft);}
+  .stagetext b{color:var(--clay-deep);font-weight:600;}
+  .metrics{flex:none;display:flex;gap:10px;}
+  .metric{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-soft);white-space:nowrap;}
+  .metric .bar{width:44px;height:5px;border-radius:999px;background:rgba(120,110,90,0.16);overflow:hidden;}
+  .metric .bar i{display:block;height:100%;width:0;border-radius:999px;transition:width .6s ease;}
+  .metric .num{font-variant-numeric:tabular-nums;font-size:10.5px;opacity:.75;}
+  .m1 .bar i{background:var(--moss);}
+  .m2 .bar i{background:var(--clay);}
+  .m3 .bar i{background:#79a8a0;}
+
+  /* ---------- 场景 ---------- */
+  .lawn{
+    position:relative;flex:1;min-height:0;overflow:hidden;cursor:default;
+    background:linear-gradient(180deg,#fdf8ef 0%,#f7f2e6 46%,#eef2e4 100%);
+  }
+  .lawn.picking{cursor:crosshair;}
+  .grass{
+    position:absolute;left:0;right:0;bottom:-2px;width:100%;height:auto;
+    display:block;pointer-events:none;
+  }
+  .soilband{
+    position:absolute;left:0;right:0;bottom:0;height:26%;
+    background:linear-gradient(180deg,rgba(217,155,108,0) 0%,rgba(217,155,108,.14) 100%);
+    pointer-events:none;
+  }
+  .tip{
+    position:absolute;left:50%;top:16px;transform:translateX(-50%);
+    max-width:min(92%,520px);text-align:center;
+    font-size:12.5px;letter-spacing:1.4px;line-height:1.7;color:var(--ink-soft);
+    background:rgba(255,255,255,.72);border:1px solid var(--line);
+    border-radius:14px;padding:8px 16px;pointer-events:none;z-index:12;
+    transition:opacity .5s ease;
+  }
+  .tip b{color:var(--clay-deep);font-weight:600;}
+
+  /* 场地里的杂物 */
+  .lit{position:absolute;pointer-events:auto;cursor:pointer;transition:opacity .45s ease,transform .45s ease;}
+  .lit img{width:100%;height:auto;display:block;filter:drop-shadow(0 3px 5px rgba(80,66,48,.18));}
+  .lit.gone{opacity:0;transform:translateY(-46px) scale(.72) rotate(8deg);}
+  .pop{
+    position:absolute;transform:translate(-50%,-50%);
+    font-size:11px;letter-spacing:1.5px;color:var(--clay-deep);
+    background:rgba(255,255,255,.9);border:1px solid rgba(184,118,74,.28);
+    border-radius:999px;padding:3px 10px;white-space:nowrap;pointer-events:none;z-index:14;
+    animation:floatUp 1.1s ease forwards;
+  }
+  @keyframes floatUp{
+    0%{opacity:0;transform:translate(-50%,-40%) scale(.9);}
+    25%{opacity:1;transform:translate(-50%,-70%) scale(1);}
+    100%{opacity:0;transform:translate(-50%,-160%) scale(1);}
+  }
+
+  /* 种下的东西 */
+  .item{position:absolute;pointer-events:none;}
+  .item::before{
+    content:"";position:absolute;left:50%;bottom:-2%;transform:translateX(-50%);
+    width:94%;height:26%;border-radius:50%;
+    background:radial-gradient(ellipse at 50% 55%,rgba(255,252,243,.72) 0%,rgba(255,252,243,.34) 46%,rgba(255,252,243,0) 74%);
+    pointer-events:none;
+  }
+  .item img{
+    position:relative;width:100%;height:auto;display:block;
+    filter:drop-shadow(0 8px 14px rgba(46,60,38,.28));
+    transform:scale(.2);opacity:0;
+    transition:transform 1s cubic-bezier(.2,1.4,.4,1),opacity .5s ease;
+  }
+  .item.grow img{transform:scale(1);opacity:1;}
+  .mound{
+    position:absolute;left:50%;bottom:4%;transform:translate(-50%,0) scale(0);
+    width:64%;height:16%;border-radius:50%;
+    background:radial-gradient(ellipse at 50% 40%,#c98d61 0%,#b8764a 60%,rgba(184,118,74,0) 100%);
+    opacity:.55;transition:transform .45s ease,opacity .8s ease;
+  }
+  .mound.show{transform:translate(-50%,0) scale(1);}
+  .mound.fade{opacity:0;}
+  .petal{
+    position:absolute;width:9px;height:9px;border-radius:60% 40% 55% 45%;
+    background:var(--rose);pointer-events:none;z-index:13;
+    animation:petalFall 1.4s ease-in forwards;
+  }
+  @keyframes petalFall{
+    0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(.6);}
+    15%{opacity:1;}
+    100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(1);}
+  }
+
+  /* ---------- 底部工具栏 ---------- */
+  .toolbar{
+    flex:none;background:var(--cream-2);border-top:1px solid var(--line);
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom));z-index:20;
+  }
+  .tools{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;}
+  .tools::-webkit-scrollbar{height:4px;}
+  .tools::-webkit-scrollbar-thumb{background:rgba(120,110,90,.25);border-radius:9px;}
+  .tool{
+    flex:none;width:72px;border:1px solid var(--line);border-radius:14px;
+    background:#fff;padding:6px 4px 5px;cursor:pointer;text-align:center;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,opacity .2s ease;
+  }
+  .tool img{width:46px;height:40px;object-fit:contain;display:block;margin:0 auto 2px;}
+  .tool span{display:block;font-size:10.5px;letter-spacing:.5px;color:var(--ink-soft);}
+  .tool.on{border-color:var(--clay);box-shadow:0 4px 14px rgba(184,118,74,.22);transform:translateY(-3px);}
+  .tool.on span{color:var(--clay-deep);}
+  .tool[disabled]{opacity:.38;cursor:not-allowed;transform:none;box-shadow:none;}
+  .actions{display:flex;align-items:center;gap:10px;margin-top:6px;}
+  .btn{
+    border:none;border-radius:999px;cursor:pointer;font-family:inherit;
+    font-size:12.5px;letter-spacing:2px;padding:9px 20px;
+    background:var(--clay);color:#fffaf2;box-shadow:0 4px 14px rgba(184,118,74,.28);
+    transition:transform .15s ease,background .2s ease;
+  }
+  .btn:hover{background:var(--clay-deep);}
+  .btn:active{transform:translateY(1px);}
+  .btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);box-shadow:none;padding:8px 14px;font-size:11.5px;}
+  .act-note{flex:1;font-size:11.5px;letter-spacing:1px;color:var(--ink-soft);line-height:1.5;}
+
+  /* ---------- 完成卡片 ---------- */
+  .veil{
+    position:fixed;inset:0;z-index:40;display:none;
+    align-items:center;justify-content:center;padding:20px;
+    background:rgba(74,68,56,.42);backdrop-filter:blur(3px);
+  }
+  .veil.on{display:flex;animation:fadeIn .4s ease;}
+  @keyframes fadeIn{from{opacity:0;}to:{opacity:1;}}
+  .card{
+    width:min(420px,100%);max-height:88vh;overflow:auto;
+    background:#fffdf7;border-radius:6px;padding:26px 24px 22px;
+    box-shadow:0 18px 50px rgba(60,52,40,.3);transform:rotate(-.7deg);
+    animation:cardIn .5s cubic-bezier(.2,1.2,.4,1);
+  }
+  @keyframes cardIn{from{opacity:0;transform:rotate(-.7deg) translateY(24px) scale(.96);}to{opacity:1;transform:rotate(-.7deg) translateY(0) scale(1);}}
+  .card .kicker{font-size:10.5px;letter-spacing:4px;color:var(--clay);}
+  .card h3{margin:10px 0 4px;font-size:21px;font-weight:600;letter-spacing:1px;}
+  .card .stat{margin:14px 0;font-size:12.5px;line-height:2;color:var(--ink);}
+  .card .stat b{color:var(--clay-deep);font-weight:600;}
+  .card .quote{
+    margin:16px 0;padding:14px 16px;border-left:3px solid var(--moss);
+    background:rgba(157,191,139,.12);border-radius:0 8px 8px 0;
+    font-size:13.5px;line-height:1.9;letter-spacing:1px;color:var(--ink);
+  }
+  .card .row{display:flex;gap:8px;align-items:center;margin-top:6px;}
+  .card input{
+    flex:1;min-width:0;font-family:inherit;font-size:13px;color:var(--ink);
+    border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#fff;
+  }
+  .card .byline{margin-top:10px;font-size:12.5px;letter-spacing:1px;color:var(--clay-deep);min-height:1.2em;}
+  .card .foot{display:flex;gap:10px;margin-top:18px;}
+  .card .foot .btn{flex:1;padding:10px 0;font-size:12px;}
+
+  @media (max-width:640px){
+    .topbar{padding:8px 10px;gap:8px;}
+    .back{font-size:11.5px;padding:5px 9px;}
+    /* 窄屏顶栏太挤，阶段说明交给场景里那行提示 */
+    .stagetext{display:none;}
+    .metric .bar{width:30px;}
+    .metric{font-size:10.5px;}
+    .tip{font-size:11.5px;padding:7px 12px;top:12px;}
+    .tool{width:64px;}
+    .tool img{width:40px;height:36px;}
+    .tool span{font-size:10px;}
+    .btn{font-size:12px;padding:9px 16px;letter-spacing:1px;}
+    .act-note{font-size:11px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <a class="back" href="./index.html">← 回到展览</a>
+    <div class="stagetext" id="stageText">这块地是居民投票选出来的，<b>交给你来共建</b></div>
+    <div class="metrics">
+      <div class="metric m1">🌱<span class="bar"><i id="bar1"></i></span><span class="num" id="num1">0</span></div>
+      <div class="metric m2">🤝<span class="bar"><i id="bar2"></i></span><span class="num" id="num2">0</span></div>
+      <div class="metric m3">🌍<span class="bar"><i id="bar3"></i></span><span class="num" id="num3">0</span></div>
+    </div>
+  </div>
+
+  <div class="lawn" id="lawn">
+    <img class="grass" src="garden/grass.webp" alt="" />
+    <div class="soilband"></div>
+    <div class="tip" id="tip">先把散落的 <b>落叶 · 塑料袋 · 纸团</b> 收走吧</div>
+  </div>
+
+  <div class="toolbar">
+    <div class="tools" id="tools"></div>
+    <div class="actions">
+      <div class="act-note" id="actNote">清理完场地，就可以开始种了。</div>
+      <button class="btn ghost" id="resetBtn" type="button">重新来过</button>
+      <button class="btn" id="doneBtn" type="button">完成共建</button>
+    </div>
+  </div>
+</div>
+
+<div class="veil" id="veil">
+  <div class="card" id="card">
+    <div class="kicker">共 建 花 园 · 完 成</div>
+    <h3 id="cardTitle">这座花园落成了</h3>
+    <div class="stat" id="cardStat"></div>
+    <div class="quote" id="cardQuote"></div>
+    <div class="row">
+      <input id="nameInput" type="text" maxlength="12" placeholder="留下你的名字（可不填）" />
+      <button class="btn" id="nameBtn" type="button">记下</button>
+    </div>
+    <div class="byline" id="byline"></div>
+    <div class="foot">
+      <button class="btn ghost" id="againBtn" type="button">再种一座</button>
+      <button class="btn" id="backBtn" type="button">回到展览</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var IMG = {
+    flower:'garden/flower.webp', tree:'garden/tree.webp', hedge:'garden/hedge.webp',
+    bench:'garden/bench.webp', rain:'garden/rain.webp', butterfly:'garden/butterfly.webp',
+    sign:'garden/sign.webp', leaf:'garden/leaf.webp', bag:'garden/bag.webp', paper:'garden/paper.webp'
+  };
+
+  /* 每件东西：宽度（占场景宽度）、权重分 */
+  var KINDS = {
+    flower:   {name:'花苗',   w:14, life:6,  hood:1, eco:3,  green:true},
+    tree:     {name:'小树',   w:24, life:9,  hood:2, eco:7,  green:true},
+    hedge:    {name:'绿篱',   w:32, life:7,  hood:2, eco:6,  green:true},
+    bench:    {name:'木座椅', w:18, life:2,  hood:8, eco:2},
+    rain:     {name:'雨水桶', w:14, life:3,  hood:1, eco:8},
+    butterfly:{name:'蝴蝶屋', w:14, life:4,  hood:5, eco:6},
+    sign:     {name:'共建牌', w:16, life:2,  hood:12,eco:3}
+  };
+  var ORDER = ['flower','tree','hedge','bench','rain','butterfly','sign'];
+
+  var QUOTES = [
+    '不是大拆大建，是把日常重新种一遍。',
+    '你刚种下的，是深圳的另一种公共空间。',
+    '花园会老，参与感不会。',
+    '一块空地变成花园，只需要几个人愿意先动手。',
+    '种子会自己长，关系要常常浇。',
+    '这里不种纪念碑，只种日常。',
+    '有人愿意坐下，花园才算真的建成了。'
+  ];
+
+  var lawn = document.getElementById('lawn');
+  var tip = document.getElementById('tip');
+  var tools = document.getElementById('tools');
+  var actNote = document.getElementById('actNote');
+  var stageText = document.getElementById('stageText');
+  var veil = document.getElementById('veil');
+
+  var state = load() || fresh();
+
+  function fresh() {
+    return { stage: 1, lits: null, items: [], name: '' };
+  }
+  function save() {
+    try { localStorage.setItem('sz-garden-v1', JSON.stringify(state)); } catch (e) {}
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem('sz-garden-v1');
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      if (!s || typeof s !== 'object') return null;
+      if (!s.items) s.items = [];
+      if (s.stage !== 2) s.stage = 1;
+      return s;
+    } catch (e) { return null; }
+  }
+
+  /* ---------- 阶段一：清理 ---------- */
+  function randLits() {
+    var plan = [
+      {k:'leaf', n:5}, {k:'bag', n:3}, {k:'paper', n:4}
+    ];
+    var out = [];
+    plan.forEach(function (p) {
+      for (var i = 0; i < p.n; i++) out.push({ k: p.k });
+    });
+    // 打散并铺开位置
+    var cells = [];
+    var rows = 3, cols = 4;
+    for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) cells.push([c, r]);
+    shuffle(cells);
+    out.forEach(function (o, i) {
+      var cell = cells[i % cells.length];
+      o.x = 10 + cell[0] * (80 / (cols - 1)) + rand(-4, 4);
+      o.y = 52 + cell[1] * 13 + rand(-3, 3);
+      o.rot = rand(-22, 22);
+      o.w = 7 + Math.random() * 2.5;
+    });
+    return out;
+  }
+
+  function renderLits() {
+    if (!state.lits) state.lits = randLits();
+    state.lits.forEach(function (o, i) {
+      if (o.done) return;
+      var el = document.createElement('div');
+      el.className = 'lit';
+      el.style.left = o.x + '%';
+      el.style.top = o.y + '%';
+      el.style.width = o.w + '%';
+      el.style.transform = 'translate(-50%,-50%) rotate(' + o.rot + 'deg)';
+      el.dataset.i = i;
+      var im = document.createElement('img');
+      im.src = IMG[o.k];
+      im.alt = '';
+      el.appendChild(im);
+      el.addEventListener('click', function () { clearOne(o, el); });
+      lawn.appendChild(el);
+    });
+  }
+
+  function clearOne(o, el) {
+    o.done = true;
+    el.classList.add('gone');
+    var r = el.getBoundingClientRect();
+    var lr = lawn.getBoundingClientRect();
+    popText(r.left - lr.left + r.width / 2, r.top - lr.top + r.height / 2, '收拾好了');
+    setTimeout(function () { el.remove(); }, 500);
+    save();
+    var left = state.lits.filter(function (x) { return !x.done; }).length;
+    if (left === 0) setTimeout(toStage2, 620);
+    else actNote.textContent = '还剩 ' + left + ' 处，慢慢来。';
+  }
+
+  /* ---------- 阶段二：共建 ---------- */
+  var picked = null;
+
+  function buildTools() {
+    ORDER.forEach(function (k) {
+      var t = document.createElement('div');
+      t.className = 'tool';
+      t.dataset.k = k;
+      if (state.stage !== 2) t.setAttribute('disabled', '');
+      var im = document.createElement('img');
+      im.src = IMG[k]; im.alt = KINDS[k].name;
+      var sp = document.createElement('span');
+      sp.textContent = KINDS[k].name;
+      t.appendChild(im); t.appendChild(sp);
+      t.addEventListener('click', function () { pick(k, t); });
+      tools.appendChild(t);
+    });
+  }
+
+  function pick(k, el) {
+    if (state.stage !== 2) { actNote.textContent = '先把场地清理干净，工具就能用了。'; return; }
+    picked = k;
+    Array.prototype.forEach.call(tools.children, function (c) { c.classList.remove('on'); });
+    el.classList.add('on');
+    lawn.classList.add('picking');
+    actNote.textContent = '点一下空地，把「' + KINDS[k].name + '」放下去。';
+  }
+
+  function place(ev) {
+    if (state.stage !== 2 || !picked) return;
+    var r = lawn.getBoundingClientRect();
+    var x = ((ev.clientX - r.left) / r.width) * 100;
+    var y = ((ev.clientY - r.top) / r.height) * 100;
+    if (y < 38) y = 38;
+    if (y > 86) y = 86;
+    if (x < 6) x = 6;
+    if (x > 94) x = 94;
+
+    if (picked === 'sign' && state.items.length < 3) {
+      popText((x / 100) * r.width, (y / 100) * r.height, '先种下 3 样东西再立牌子');
+      actNote.textContent = '共建标识牌要等花园里有了 3 样东西，才有内容可写。';
+      return;
+    }
+
+    var item = { k: picked, x: x, y: y };
+    state.items.push(item);
+    renderItem(item, r);
+    checkBonus(item, r);
+    save();
+    updateMetrics();
+  }
+
+  function renderItem(item, r) {
+    var K = KINDS[item.k];
+    var el = document.createElement('div');
+    el.className = 'item';
+    el.style.left = item.x + '%';
+    el.style.top = item.y + '%';
+    el.style.width = K.w + '%';
+    el.style.transform = 'translate(-50%,-72%)';
+    el.style.zIndex = String(10 + Math.round(item.y * 2));
+
+    var mound = document.createElement('div');
+    mound.className = 'mound';
+    el.appendChild(mound);
+    var im = document.createElement('img');
+    im.src = IMG[item.k];
+    im.alt = K.name;
+    el.appendChild(im);
+    lawn.appendChild(el);
+
+    requestAnimationFrame(function () {
+      mound.classList.add('show');
+      setTimeout(function () {
+        el.classList.add('grow');
+        mound.classList.add('fade');
+        petals((item.x / 100) * r.width, ((item.y - K.w * 0.28) / 100) * r.width * (r.height / r.width));
+      }, 620);
+    });
+  }
+
+  function petals(cx, cy) {
+    var n = 8 + Math.floor(Math.random() * 4);
+    for (var i = 0; i < n; i++) {
+      var p = document.createElement('div');
+      p.className = 'petal';
+      var dx = rand(-70, 70), dy = rand(40, 120), rot = rand(-180, 180);
+      p.style.left = cx + rand(-16, 16) + 'px';
+      p.style.top = cy + rand(-10, 10) + 'px';
+      p.style.setProperty('--dx', dx + 'px');
+      p.style.setProperty('--dy', dy + 'px');
+      p.style.setProperty('--rot', rot + 'deg');
+      p.style.background = Math.random() < 0.5 ? '#f0b9b0' : '#f6d9c6';
+      p.style.animationDelay = (Math.random() * 0.25) + 's';
+      lawn.appendChild(p);
+      (function (p) { setTimeout(function () { p.remove(); }, 1900); })(p);
+    }
+  }
+
+  function popText(x, y, text) {
+    var el = document.createElement('div');
+    el.className = 'pop';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.textContent = text;
+    lawn.appendChild(el);
+    setTimeout(function () { el.remove(); }, 1200);
+  }
+
+  /* 相邻关系：座椅靠着绿意、雨水桶接着绿植 */
+  function near(item, kinds, distPct) {
+    return state.items.some(function (o) {
+      if (o === item) return false;
+      if (kinds.indexOf(o.k) === -1) return false;
+      var dx = o.x - item.x, dy = (o.y - item.y) * 0.55;
+      return Math.sqrt(dx * dx + dy * dy) < distPct;
+    });
+  }
+
+  function checkBonus(item, r) {
+    var x = (item.x / 100) * r.width;
+    var y = (item.y / 100) * r.height - r.height * 0.06;
+    if (item.k === 'bench') {
+      if (near(item, ['tree', 'flower', 'hedge'], 16)) {
+        item.bonus = 'hood';
+        setTimeout(function () { popText(x, y, '树荫下的座位 · 邻里感 +'); }, 900);
+      } else {
+        setTimeout(function () { popText(x, y, '座椅旁边有树或花会更舒服'); }, 900);
+      }
+    }
+    if (item.k === 'rain') {
+      if (near(item, ['flower', 'tree', 'hedge'], 15)) {
+        item.bonus = 'eco';
+        setTimeout(function () { popText(x, y, '雨水浇绿植 · 可持续 +'); }, 900);
+      } else {
+        setTimeout(function () { popText(x, y, '把它放在绿植旁边试试'); }, 900);
+      }
+    }
+    if (item.k === 'sign') {
+      item.bonus = 'sign';
+      setTimeout(function () { popText(x, y, '共建标识牌点亮了 ✦'); }, 900);
+    }
+  }
+
+  /* ---------- 三个指标 ---------- */
+  function metrics() {
+    var life = 0, hood = 0, eco = 0;
+    state.items.forEach(function (it) {
+      var K = KINDS[it.k];
+      life += K.life; hood += K.hood; eco += K.eco;
+      if (it.bonus === 'hood') hood += 6;
+      if (it.bonus === 'eco') eco += 6;
+      if (it.bonus === 'sign') hood += 6;
+    });
+    return {
+      life: Math.min(100, Math.round(life * 1.15)),
+      hood: Math.min(100, Math.round(hood * 1.1)),
+      eco: Math.min(100, Math.round(eco * 1.15))
+    };
+  }
+
+  function updateMetrics() {
+    var m = metrics();
+    setBar('bar1', 'num1', m.life);
+    setBar('bar2', 'num2', m.hood);
+    setBar('bar3', 'num3', m.eco);
+  }
+  function setBar(barId, numId, v) {
+    document.getElementById(barId).style.width = v + '%';
+    document.getElementById(numId).textContent = v;
+  }
+
+  /* ---------- 阶段切换 ---------- */
+  function toStage2() {
+    state.stage = 2;
+    save();
+    tip.innerHTML = '场地腾出来了。<b>接下来种点什么？</b>';
+    tip.style.opacity = '1';
+    stageText.innerHTML = '阶段二 · <b>共建花园</b>';
+    Array.prototype.forEach.call(tools.children, function (c) { c.removeAttribute('disabled'); });
+    actNote.textContent = '点下面的工具，再点空地放下它。';
+    var first = tools.children[0];
+    if (first) pick('flower', first);
+    setTimeout(function () { tip.style.opacity = '0'; }, 3200);
+  }
+
+  /* ---------- 完成 ---------- */
+  function finish() {
+    if (state.items.length === 0) {
+      actNote.textContent = '先在空地上种点什么，再完成共建吧。';
+      return;
+    }
+    var count = {};
+    state.items.forEach(function (it) { count[it.k] = (count[it.k] || 0) + 1; });
+    var parts = [];
+    ORDER.forEach(function (k) {
+      if (count[k]) parts.push(KINDS[k].name + ' ×' + count[k]);
+    });
+    var m = metrics();
+    document.getElementById('cardStat').innerHTML =
+      '你和邻居们一起种下了：' + parts.join('、') + '。<br>' +
+      '🌱 生命力 <b>' + m.life + '</b> · 🤝 邻里感 <b>' + m.hood + '</b> · 🌍 可持续 <b>' + m.eco + '</b>';
+    document.getElementById('cardQuote').textContent =
+      QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    var input = document.getElementById('nameInput');
+    input.value = state.name || '';
+    renderByline();
+    veil.classList.add('on');
+  }
+
+  function renderByline() {
+    var el = document.getElementById('byline');
+    el.textContent = state.name ? (state.name + ' 和邻居们一起建了这座花园') : '';
+  }
+
+  /* ---------- 事件 ---------- */
+  lawn.addEventListener('click', function (ev) {
+    if (state.stage !== 2) return;
+    if (!picked) { actNote.textContent = '先在下面选一样要种的东西。'; return; }
+    place(ev);
+  });
+
+  document.getElementById('doneBtn').addEventListener('click', finish);
+  document.getElementById('againBtn').addEventListener('click', function () {
+    veil.classList.remove('on');
+    reset();
+  });
+  document.getElementById('backBtn').addEventListener('click', function () {
+    location.href = './index.html';
+  });
+  document.getElementById('nameBtn').addEventListener('click', function () {
+    var v = document.getElementById('nameInput').value.trim();
+    state.name = v;
+    save();
+    renderByline();
+  });
+  document.getElementById('nameInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('nameBtn').click();
+  });
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    if (confirm('清空这座花园，重新种一次？')) reset();
+  });
+  veil.addEventListener('click', function (e) {
+    if (e.target === veil) veil.classList.remove('on');
+  });
+  window.addEventListener('resize', function () { /* 百分比布局，无需重算 */ });
+
+  function reset() {
+    state = fresh();
+    save();
+    Array.prototype.slice.call(lawn.querySelectorAll('.item,.lit,.pop,.petal')).forEach(function (n) { n.remove(); });
+    picked = null;
+    Array.prototype.forEach.call(tools.children, function (c) { c.classList.remove('on'); c.setAttribute('disabled', ''); });
+    stageText.innerHTML = '这块地是居民投票选出来的，<b>交给你来共建</b>';
+    tip.innerHTML = '先把散落的 <b>落叶 · 塑料袋 · 纸团</b> 收走吧';
+    tip.style.opacity = '1';
+    actNote.textContent = '清理完场地，就可以开始种了。';
+    updateMetrics();
+    renderLits();
+  }
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  /* ---------- 启动 ---------- */
+  buildTools();
+  updateMetrics();
+  if (state.stage === 2) {
+    tip.style.opacity = '0';
+    stageText.innerHTML = '阶段二 · <b>共建花园</b>';
+    Array.prototype.forEach.call(tools.children, function (c) { c.removeAttribute('disabled'); });
+    var r = lawn.getBoundingClientRect();
+    state.items.forEach(function (it) {
+      renderItem(it, r);
+    });
+    actNote.textContent = '欢迎回来。继续种，或者点「完成共建」。';
+  } else {
+    renderLits();
+  }
+})();
+</script>
+</body>
+</html>
